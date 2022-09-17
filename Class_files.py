@@ -359,3 +359,87 @@ class PSIEc(gen_lens):
         self.a2, self.a1 = np.gradient(self.pot / self.pixel ** 2)
         self.a12, self.a11 = np.gradient(self.a1)
         self.a22, self.a21 = np.gradient(self.a2)
+
+class deflector(gen_lens):
+
+    def __init__(self,co,filekappa,zl=0.5,zs=1.0,
+        pad=False,npix=200,size=100):
+
+        # read input convergence map from fits file
+        kappa,header=pyfits.getdata(filekappa,header=True)
+        self.co = co
+        self.zl = zl
+        self.zs = zs
+        # angular diameter distances
+        self.dl = co.angular_diameter_distance(self.zl)
+        self.ds = co.angular_diameter_distance(self.zs)
+        self.dls = co.angular_diameter_distance_z1z2(self.zl,self.zs)
+        # pixel scale and number of pixels of the input convergence map
+        self.pixel_scale=header['CDELT2']*3600.0
+        self.kappa=kappa
+        self.nx=kappa.shape[0]
+        self.ny=kappa.shape[1]
+        # pixels and size of the output lensing maps
+        # they can be different from the those of the
+        # input convergence map
+        self.npix=npix
+        self.size=size
+        self.pixel=float(self.size)/self.npix
+        # use zero-padding to compute the lensing potential
+        self.pad=pad
+        if (pad):
+            self.kpad()
+        self.potential()
+
+    def kpad(self):
+        def padwithzeros(vector, pad_width, iaxis, kwargs):
+            vector[:pad_width[0]] = 0
+            vector[-pad_width[1]:] = 0
+            return vector
+        # use the pad method from numpy.lib to add zeros (padwithzeros)
+        # in a frame with thickness self.kappa.shape[0]
+        self.kappa = np.lib.pad(self.kappa, self.kappa.shape[0],padwithzeros)
+    # calculate the potential by solving the poisson equation
+    # the output potential map has the same size of the input
+    # convergence map
+    def potential_from_kappa(self):
+        # define an array of wavenumbers (two components k1,k2)
+        k = np.array(np.meshgrid(fftengine.fftfreq(self.kappa.shape[0])\
+        ,fftengine.fftfreq(self.kappa.shape[1])))
+        #Compute Laplace operator in Fourier space = -4*pi*k^2
+        kk = k[0]**2 + k[1]**2
+        kk[0,0] = 1.0
+        #FFT of the convergence
+        kappa_ft = fftengine.fftn(self.kappa)
+        #compute the FT of the potential
+        kappa_ft *= - 1.0 / (kk * (2.0*np.pi**2))
+        kappa_ft[0,0] = 0.0
+        potential=fftengine.ifftn(kappa_ft)
+        if self.pad:
+            pot=self.mapCrop(potential.real)
+        return pot
+
+    def potential(self):
+        no=self.pixel
+        x_ = np.linspace(0,self.npix-1,self.npix)
+        y_ = np.linspace(0,self.npix-1,self.npix)
+        x,y=np.meshgrid(x_,y_)
+        potential=self.potential_from_kappa()
+        x0 = y0 = potential.shape[0] / 2*self.pixel_scale-self.size/2.0
+        x=(x0+x*no)/self.pixel_scale
+        y=(y0+y*no)/self.pixel_scale
+        self.pot_exists=True
+        pot=map_coordinates(potential,[y,x],order=1)
+        self.pot=pot*self.pixel_scale**2/no/no
+        self.a2,self.a1=np.gradient(self.pot)
+        self.a12,self.a11=np.gradient(self.a1)
+        self.a22, self.a21 = np.gradient(self.a2)
+        self.pot = pot * self.pixel_scale ** 2
+
+    def mapCrop(self, mappa):
+        xmin = int(self.kappa.shape[0] / 2 - self.nx / 2)
+        ymin = int(self.kappa.shape[1] / 2 - self.ny / 2)
+        xmax = int(xmin + self.nx)
+        ymax = int(ymin + self.ny)
+        mappa = mappa[xmin:xmax, ymin:ymax]
+        return (mappa)
