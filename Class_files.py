@@ -1,3 +1,6 @@
+import numpy as np  # efficient vector and matrix operations
+import scipy.special as sy
+
 class point_bh:
 
     def __init__(self,M):
