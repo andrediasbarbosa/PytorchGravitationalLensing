@@ -1,6 +1,5 @@
-from scipy import special as sy         # need special functions for incomplete
-import numpy as np                      # efficient vector and matrix operations
-import matplotlib.pyplot as plt         # a MATLAB-like plotting framework
+import matplotlib.pyplot as plt  # a MATLAB-like plotting framework
+import numpy as np  # efficient vector and matrix operations
 
 data = {'a': np.arange(50),
         'c': np.random.randint(0, 50, 50),
