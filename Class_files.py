@@ -7,6 +7,8 @@ import scipy.special as sy
 from astropy.constants import c, G
 from scipy.optimize import brentq
 
+# also check: https://github.com/maxmen/LensingLectures/tree/master/Notebooks
+
 class point_bh:
 
     def __init__(self, M):
@@ -369,7 +371,7 @@ class PSIEc(gen_lens):
 
 class deflector(gen_lens):
 
-    def __init__(self, co, filekappa, zl=0.5, zs=1.0,
+    def __init__(self, filekappa,co=0.5, zl=0.5, zs=1.0,
                  pad=False, npix=200, size=100):
 
         # read input convergence map from fits file
