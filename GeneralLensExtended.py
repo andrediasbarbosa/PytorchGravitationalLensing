@@ -6,7 +6,7 @@ from Class_files import PSIEc, sersic, deflector
 size=200.0
 npix=500
 # create instance of the deflector class
-df=deflector(co,'data/kappa_2.fits',zl=0.5, zs=9.0, pad=True,npix=npix,size=size)
+df=deflector(co,'/data/kappa_2.fits',zl=0.5, zs=9.0, pad=True,npix=npix,size=size)
 # set the source position and Sersic parameters:
 beta=[-30,8]
 kwargs={'q': 0.5,
